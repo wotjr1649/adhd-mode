@@ -7,6 +7,11 @@ name: plugin loads in Claude Code
 # `claude plugin validate .` only reads the marketplace manifest when one is
 # present, so it passes on a syntactically broken hooks/hooks.json. The second
 # validate call targets the plugin manifest, which pulls in hooks and skills.
+#
+# Neither call looks at .codex-plugin/plugin.json, and no Codex command reports
+# whether a plugin registered any hooks -- `codex plugin list` prints
+# "installed, enabled" either way. The manifest assertion below is the only
+# static check that catches the two-sided hooks-key invariant.
 on:
   pull_request:
     paths:
@@ -23,6 +28,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Assert the hooks key is declared for Codex and left off for Claude
+        run: |
+          node -e '
+            const fs = require("fs");
+            const codex = JSON.parse(fs.readFileSync(".codex-plugin/plugin.json", "utf8"));
+            const claude = JSON.parse(fs.readFileSync(".claude-plugin/plugin.json", "utf8"));
+            if (typeof codex.hooks !== "string") {
+              throw new Error(".codex-plugin/plugin.json has no hooks key. Codex does not auto-load hooks/hooks.json, so nothing would register and codex plugin list would still say installed, enabled.");
+            }
+            if (claude.hooks) {
+              throw new Error(".claude-plugin/plugin.json declares hooks. Claude auto-loads the conventional path; a second declaration is a duplicate and drops the whole hook set (upstream ed6a0a2).");
+            }
+            const target = codex.hooks.replace(/^\.\//, "");
+            JSON.parse(fs.readFileSync(target, "utf8"));
+            console.log("ok: codex hooks -> " + target);
+          '
 
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code

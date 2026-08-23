@@ -17,6 +17,7 @@
     "codex"
   ],
   "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
   "interface": {
     "displayName": "ADHD Mode",
     "shortDescription": "Answer-first output, always on",

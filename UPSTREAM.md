@@ -50,9 +50,10 @@ MIT. `LICENSE`의 원 저작권 고지(`Copyright (c) 2026 Ayoub Ghriss`)는 그
 
 원본 저장소에서 가져온 판단 중 이 포크가 그대로 따르는 것:
 
-- `manifest.hooks` 키를 쓰지 않는다 (`ed6a0a2`). 관례 경로 `hooks/hooks.json`을
-  가리키면 중복 검사에 걸려 훅 세트 전체가 드롭되고, 플러그인은 설치 성공으로
-  표시된 채 아무 일도 하지 않는다.
+- **Claude 매니페스트에서만** `hooks` 키를 쓰지 않는다 (`ed6a0a2`). 관례 경로
+  `hooks/hooks.json`을 가리키면 중복 검사에 걸려 훅 세트 전체가 드롭되고, 플러그인은
+  설치 성공으로 표시된 채 아무 일도 하지 않는다. Codex는 반대로 관례 경로를 자동
+  로드하지 않으므로 `.codex-plugin/plugin.json`에 이 키가 반드시 있어야 한다.
 - SessionStart 런처는 셸 확장이 아니라 `node -e`로 환경변수를 읽는다
   (`d264f01`, `578d076`). `CLAUDE_PLUGIN_ROOT`와 `PLUGIN_ROOT` 양쪽을 본다.
 - 훅 timeout은 30초다 (`43eeda8`). 다른 SessionStart 훅이 여럿 등록된 환경에서
