@@ -16,7 +16,10 @@ try {
   // Resolve SKILL.md relative to this script's own location, not a trusted env var.
   const scriptDir = path.dirname(fileURLToPath(import.meta.url));
   const skillPath = path.join(scriptDir, "..", "skills", "adhd-mode", "SKILL.md");
-  if (!fs.existsSync(skillPath)) process.exit(0);
+  if (!fs.existsSync(skillPath)) {
+    process.stderr.write(`adhd-mode: ruleset not found at ${skillPath}\n`);
+    process.exit(0);
+  }
 
   // Strip a leading YAML frontmatter block (--- ... --- at the very top of file).
   const body = fs
@@ -34,7 +37,11 @@ try {
     "ADHD MODE ACTIVE. The ruleset below applies to every response in this session.\n\n" +
       `${body}\n`,
   );
-} catch {
-  // Never block session start.
+} catch (err) {
+  // Never block session start — but say why on stderr. Both hosts read "exit 0
+  // with empty stdout" as "succeeded, no extra context", so a silent catch
+  // turns every failure here into a plugin that loads and does nothing.
+  // stderr goes to the hook log, not the model's context.
+  process.stderr.write(`adhd-mode: ${err?.message ?? err}\n`);
   process.exit(0);
 }

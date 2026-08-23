@@ -97,14 +97,36 @@ SubagentStart                                    ┘→ hooks/inject.mjs
 
 - 훅은 파일 하나를 읽어 출력할 뿐이다. 어디에도 쓰지 않는다
 - 상태 파일, 홈 디렉터리 수정, 네트워크, MCP, telemetry 없음
-- 실패하면 조용히 exit 0 — 세션 시작을 막지 않는다
+- 실패해도 세션 시작을 막지 않는다 (exit 0). 다만 이유는 stderr에 남긴다
 - 비용: 세션당 약 2.2k 토큰, 서브에이전트당 동일
+- `additionalContextLimit: 4000` 을 명시한다. Codex 기본값은 핸들러당 약 2,500
+  토큰이고, 넘으면 전문을 모델에 넣지 않고 파일로 흘린 뒤 앞뒤 preview만 준다.
+  현재 본문이 약 2.2k라 기본값으로는 여유가 12%밖에 없다
 - 두 스킬 모두 명시 호출 전용 (`disable-model-invocation`,
   `allow_implicit_invocation: false`)
 
 `hooks/hooks.json`은 관례 경로다. 매니페스트에서 참조하지 않는다 —
 참조하면 중복 등록으로 훅 세트 전체가 드롭되고 플러그인이 조용히 무력화된다
 (upstream `ed6a0a2`).
+
+## 안 켜질 때
+
+플러그인이 `enabled`인데 배너가 안 뜨는 경우가 있다. 순서대로 본다.
+
+1. **훅이 등록됐나** — `claude plugin details adhd-mode`가 `Hooks (2)`를 보여야 한다.
+2. **Codex: 훅이 신뢰됐나** — plugin이 enabled여도 훅 정의를 승인하지 않으면 Codex는
+   그 훅을 건너뛴다. 훅 내용이 바뀌어 해시가 달라지면 다시 승인이 필요할 수 있다.
+   **UI에는 정상으로 보이는데 규칙만 안 들어가는 가장 유력한 경로다.**
+3. **Codex: 훅 기능이 켜져 있나** — `~/.codex/config.toml`의 `[features] hooks = true`.
+   관리 환경이면 `allow_managed_hooks_only`도 확인한다.
+4. **훅이 조용히 실패했나** — 훅 로그의 stderr에 `adhd-mode:` 로 시작하는 줄이 있는지 본다.
+5. **`node`가 PATH에 있나** — 훅은 비대화형 셸에서 돈다.
+
+스크립트만 따로 돌려볼 수 있다.
+
+```bash
+node hooks/inject.mjs | head -3
+```
 
 ## 라이선스
 

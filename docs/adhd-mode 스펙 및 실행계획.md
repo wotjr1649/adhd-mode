@@ -251,6 +251,12 @@ docs/          설계 이력 문서 (이 파일 포함)
   런처가 6549ms 걸려 취소된 실측이 근거다. 이 개발 머신에도 claude-mem·ponytail 등이
   이미 등록돼 있다.
 - **`SubagentStart`** — matcher 없음(전체). 서브에이전트 시작 시 1회만 주입되므로 저렴하다.
+- **`additionalContextLimit: 4000`** — Codex 기본값은 핸들러당 약 2,500 토큰이다.
+  넘으면 전문을 모델에 넣지 않고 `<temp_dir>/hook_outputs/…`로 흘린 뒤 앞뒤 preview와
+  경로만 전달한다. §6 개정 후 본문이 약 2.2k 토큰이라 기본값 여유가 12%뿐이다.
+  Claude Code는 이 필드를 모르지만 `validate --strict`에서도 경고 없이 통과한다(실측).
+- **`fork`는 Claude 전용.** Codex의 source enum은 4개(`startup|resume|clear|compact`)이고
+  matcher는 정규식이므로 남는 대안은 그냥 매치되지 않는다. 한 파일 공유에 문제없다.
 
 ### `hooks/inject.mjs`
 
@@ -445,9 +451,24 @@ codex plugin list                     # installed, enabled 확인
    그때만 `.codex-plugin/plugin.json`에 `hooks` 키를 추가한다(Claude 쪽에는 절대 추가하지 않는다).
 2. `$adhd-mode-off` 동작
 3. 명시 호출 전 스킬이 자동 발동하지 않음
-4. **`/compact` 후 배너 재출현 여부 — 미확정 항목.** Codex는 `PostCompact` 이벤트가 있으나
-   주입용 `PostCompactHookSpecificOutputWire`가 없다. SessionStart가 compact로 발화하지
-   않으면 재주입 경로는 `UserPromptSubmit`뿐이고, 그건 매 턴 비용이 든다. 실측 후 결정.
+4. `/compact` 후 배너 재출현. **해결됨** — Codex `rust-v0.149.0`의
+   `hooks/src/events/session_start.rs`가 수동·자동 compact 모두에서 `source: "compact"`로
+   SessionStart를 발화한다. `PostCompactHookSpecificOutputWire`가 없는 것은 PostCompact가
+   context 주입 이벤트가 아니라는 뜻이지, SessionStart가 안 뛴다는 뜻이 아니었다.
+   claude-mem이 matcher를 `startup|resume`로 좁힌 건 그 작성자의 선택이고, 그 설정은
+   Codex에서 `/clear`와 `/compact` 재주입을 놓친다.
+
+### Codex 무음 실패 경로
+
+`installed, enabled`인데 규칙이 모델에 안 닿는 경로가 셋 있다. README 트러블슈팅에 옮겼다.
+
+1. **훅 trust 미승인.** plugin enable과 hook trust는 별개다. 훅 정의를 승인하지 않으면
+   Codex가 건너뛴다. 훅 내용이 바뀌어 해시가 달라져도 재승인이 필요할 수 있다.
+2. **`[features] hooks = false` 또는 `allow_managed_hooks_only = true`.**
+   플러그인 설치·활성화와 무관하게 모든 훅이 꺼진다.
+3. **injector가 조용히 실패.** exit 0 + 빈 stdout은 두 호스트 모두 "성공, 추가 컨텍스트 없음"으로
+   읽는다. `allow_implicit_invocation: false` 때문에 스킬이 대신 발동하지도 않는다.
+   → `inject.mjs`가 실패 사유를 stderr에 남기도록 고쳤다.
 
 ### CI
 
