@@ -1,0 +1,7 @@
+interface:
+  display_name: "ADHD Mode Off"
+  short_description: "Return to the default output style"
+  default_prompt: "Use $adhd-mode-off to turn ADHD mode off for this context."
+
+policy:
+  allow_implicit_invocation: false
