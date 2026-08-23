@@ -94,7 +94,7 @@ adhd-mode/
 ├─ .codex-plugin/
 │  └─ plugin.json                 + "skills": "./skills/" + interface. hooks 키 없음
 ├─ .agents/
-│  └─ plugins/marketplace.json    url → wotjr1649/adhd-mode
+│  └─ plugins/marketplace.json    source: local, path "./" — url 고정 금지
 ├─ hooks/
 │  ├─ hooks.json                  관례 경로. 두 호스트가 자동 로드
 │  └─ inject.mjs                  SKILL.md 프론트매터 제거 후 stdout
@@ -179,7 +179,7 @@ hooks/always-on.sh          hooks/always-on.ps1         hooks/always-on.mjs
 | `.codex-plugin/plugin.json` | 5 | `homepage`, `repository`, `websiteURL`, `defaultPrompt`, `name` |
 | `.claude-plugin/plugin.json` | 1 | `name` |
 | `.claude-plugin/marketplace.json` | 2 | `name`, `plugins[].name` |
-| `.agents/plugins/marketplace.json` | 3 | `name`, `plugins[].name`, `source.url` |
+| `.agents/plugins/marketplace.json` | 3 | `name`, `plugins[].name`, `displayName`. `source`는 `url`이 아니라 `local`+`./` — §11 결함 1 참조 |
 | `.github/workflows/plugin-load-check.yml` | 1 | install 대상 |
 
 ### 구 식별자 정책
