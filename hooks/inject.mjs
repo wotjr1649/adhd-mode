@@ -12,6 +12,17 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+// Which event fired. Hosts pass the hook payload as JSON on stdin; if that is
+// unavailable we assume SessionStart, whose plain-stdout path works anyway.
+function readEventName() {
+  try {
+    const name = JSON.parse(fs.readFileSync(0, "utf8"))?.hook_event_name;
+    return typeof name === "string" ? name : null;
+  } catch {
+    return null;
+  }
+}
+
 try {
   // Resolve SKILL.md relative to this script's own location, not a trusted env var.
   const scriptDir = path.dirname(fileURLToPath(import.meta.url));
@@ -33,10 +44,26 @@ try {
   // One-line header: state that the mode is active, nothing else. How to turn
   // it off and how long that lasts is stated once, in SKILL.md's Persistence
   // section, so the two cannot drift apart.
-  process.stdout.write(
+  const text =
     "ADHD MODE ACTIVE. The ruleset below applies to every response in this session.\n\n" +
-      `${body}\n`,
-  );
+    `${body}\n`;
+
+  // SessionStart injects plain stdout. SubagentStart does not — its context is
+  // a separate thread, and plain text there is read and discarded, which is why
+  // a subagent runs unaware while the parent session is shaped. That event
+  // needs the structured form.
+  if (readEventName() === "SubagentStart") {
+    process.stdout.write(
+      JSON.stringify({
+        hookSpecificOutput: {
+          hookEventName: "SubagentStart",
+          additionalContext: text,
+        },
+      }),
+    );
+  } else {
+    process.stdout.write(text);
+  }
 } catch (err) {
   // Never block session start — but say why on stderr. Both hosts read "exit 0
   // with empty stdout" as "succeeded, no extra context", so a silent catch
