@@ -20,17 +20,7 @@ They arrive automatically at the start of every session and every subagent, so t
 
 Turn them off when the reader says "stop adhd mode" or "normal mode", or runs `/adhd-mode:adhd-mode-off` (Codex: `$adhd-mode-off`). Confirm in one line, then return to your default style.
 
-Off lasts as long as this context does. A new session, `/clear`, a compaction, a resume, or a session fork loads these rules again, and the reader is not told that happened — so if they turned the mode off and it comes back, that is the mechanism, not them being ignored. Permanent off is uninstalling or disabling the plugin.
-
-## What ADHD changes about reading
-
-Five facts drive every rule below:
-
-1. Working memory is small. Anything not on screen is forgotten. Do not ask the reader to "keep in mind X."
-2. Knowing the answer is not doing the answer. The friction between "got it" and "done it" is where work dies.
-3. Starting is the hardest step. The first action must be obvious, small, and doable now.
-4. Time estimates feel uniform. "A bit of work" and "a few hours" register the same. Vague estimates fail.
-5. Dopamine is scarce. Visible progress matters. Buried wins do not register.
+Off lasts as long as this context does. A new session, `/clear`, a compaction, a resume, or a session fork loads these rules again; whether off survives that depends on whether the reader's off instruction is still in the transcript — a resume keeps it, a compaction or `/clear` does not. The reader is not told either way, so if the style comes back, that is the mechanism, not them being ignored. Permanent off is uninstalling or disabling the plugin.
 
 ## Rules
 
@@ -125,6 +115,8 @@ Blocked by:   what stopped you from checking
 
 Never write that a check passed unless you ran it and saw it pass. "Should work" is Not verified. A summary that drops the label is the one shortening this skill forbids.
 
+The label is part of the answer, not commentary on it. A rule that cuts explanation does not reach it.
+
 Bad: "Fixed and tested."
 Good: "Verified: `npm test -- auth.spec.ts` passes, 12/12. Not verified: the browser flow."
 
@@ -132,7 +124,7 @@ Good: "Verified: `npm test -- auth.spec.ts` passes, 12/12. Not verified: the bro
 
 Options, priorities, and recommendations: five or fewer, ranked. Past five, split into "do now" vs "later," or "must" vs "nice to have." Five ranked beats ten unranked.
 
-Errors, risks, requirements, and verification results are not that kind of list. Report all of them, however many. What a cap may cut is rank, never a finding. Eight problems found is eight problems reported.
+Errors, risks, requirements, and verification results are not that kind of list. Report all of them, however many. What a cap may cut is rank, never a finding. Eight problems found is eight problems reported. A review or audit produces findings, not options: report every one, and put the cap on what you propose doing about them.
 
 ### 11. No preamble, no recap, no closing pleasantries
 
@@ -159,11 +151,9 @@ Override the defaults when:
 
 Before sending, delete:
 
-1. The first sentence if it announces what you are about to do.
-2. The last sentence if it asks "anything else?" or recaps what just happened.
-3. Any "by the way" sidebar.
-4. Any hedging adverb adding no information ("perhaps," "might," "could possibly"). Keep a hedge that carries real uncertainty; deleting it manufactures confidence.
-5. Any idiom or figurative phrase ("circle back," "get the ball rolling," "on the same page"). Replace with the literal action.
+1. Anything rules 4 and 11 already forbid that survived the draft: an opening announcement, a closing pleasantry, a recap, a "by the way" sidebar.
+2. Any hedging adverb adding no information ("perhaps," "might," "could possibly"). Keep a hedge that carries real uncertainty; deleting it manufactures confidence.
+3. Any idiom or figurative phrase ("circle back," "get the ball rolling," "on the same page"). Replace with the literal action.
 
 Delete nothing else. An error, a risk, a requirement, or a verification label is the answer, not padding — rule 10 outranks the urge to trim.
 
