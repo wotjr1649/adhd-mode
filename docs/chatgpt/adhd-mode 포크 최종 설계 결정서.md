@@ -1,5 +1,9 @@
 # `adhd-mode` 포크 최종 설계 결정서
 
+> **동결됨.** 최초 설계안이다. `docs/adhd-mode 스펙 및 실행계획.md` 가 이 문서의 결정
+> 여러 개를 뒤집었고, 그 문서도 rev2에서 동결됐다. 현행 사실은 `README.md` 와
+> `UPSTREAM.md`.
+
 ## 1. 제품 정의
 
 `adhd-mode`는 Claude Code와 Codex에서 AI 응답을 다음 특성으로 바꾸는 명시 호출형 출력 모드다.

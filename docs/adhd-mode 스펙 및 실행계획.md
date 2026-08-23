@@ -1,7 +1,11 @@
 # `adhd-mode` 스펙 및 실행계획
 
 `docs/chatgpt/adhd-mode 포크 최종 설계 결정서.md`를 환경 검증 후 개정한 문서다.
-충돌 시 이 문서가 우선한다.
+
+> **동결됨 (rev2, 2026-08-24).** 설계 이력으로만 보존한다. 현행 사실은 `README.md` 와
+> `UPSTREAM.md` 가 우선한다. 이후 적대적 검증에서 §8·§11의 실측 표 여러 항목이
+> 반증됐다 — Codex 전달은 확인된 적이 없었고, 매니페스트 `hooks` 키 금지는 Claude
+> 한정이며, off 지속 경계와 주입 토큰 수도 실측과 달랐다.
 
 기준 커밋: `b42a45a` (ayghri/i-have-adhd)
 검증 환경: `claude 2.1.241` / `codex-cli 0.149.0` / `node v24.19.0` / Windows 11
