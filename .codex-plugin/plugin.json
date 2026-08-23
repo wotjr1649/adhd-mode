@@ -32,8 +32,6 @@
       "Make this answer action-first and easy to execute.",
       "Review this response for ADHD-friendly structure."
     ],
-    "brandColor": "#2563EB",
-    "composerIcon": "./logo.png",
-    "logo": "./logo.png"
+    "brandColor": "#2563EB"
   }
 }
