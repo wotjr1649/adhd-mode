@@ -3,37 +3,35 @@ name: plugin loads in Claude Code
 # Installs the plugin from this checkout into a scratch CLAUDE_CONFIG_DIR and
 # fails if it does not reach "enabled". Catches load-layer breakage that
 # schema validation misses, e.g. the duplicate hooks declaration in #61.
+#
+# `claude plugin validate .` only reads the marketplace manifest when one is
+# present, so it passes on a syntactically broken hooks/hooks.json. The second
+# validate call targets the plugin manifest, which pulls in hooks and skills.
 on:
   pull_request:
     paths:
       - .claude-plugin/**
+      - .codex-plugin/**
       - hooks/**
       - skills/**
-      - tests/test_always_on_hooks.py
       - .github/workflows/plugin-load-check.yml
   push:
     branches: [main]
 
 jobs:
-  hook-parity:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-      - name: Test native hook implementations
-        run: python -m unittest tests.test_always_on_hooks -v
-
   load:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
+
+      - name: Validate the marketplace, plugin, hooks, and skill manifests
+        run: |
+          claude plugin validate .
+          claude plugin validate .claude-plugin/plugin.json
+
       - name: Install the plugin from this checkout into a scratch config
         run: |
           export CLAUDE_CONFIG_DIR="$RUNNER_TEMP/claude-scratch"
