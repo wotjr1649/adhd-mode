@@ -251,6 +251,12 @@ docs/          설계 이력 문서 (이 파일 포함)
   런처가 6549ms 걸려 취소된 실측이 근거다. 이 개발 머신에도 claude-mem·ponytail 등이
   이미 등록돼 있다.
 - **`SubagentStart`** — matcher 없음(전체). 서브에이전트 시작 시 1회만 주입되므로 저렴하다.
+  **평문 stdout으로는 전달되지 않는다.** SessionStart 컨텍스트는 부모 스레드 전용이라
+  서브에이전트에 닿지 않고, SubagentStart에서 쓴 평문은 읽힌 뒤 버려진다. 이 이벤트만
+  `hookSpecificOutput.additionalContext` JSON을 써야 한다. `inject.mjs`가 stdin의
+  `hook_event_name`을 읽어 분기한다. 검증된 SessionStart 평문 경로는 그대로 둔다.
+  플러그인 표면(`plugin details`의 `Hooks (2)`, validate 통과, exit 0)은 이 실패를
+  전혀 드러내지 않았다 — 실제 서브에이전트를 띄워야만 보인다.
 - **`additionalContextLimit: 4000`** — Codex 기본값은 핸들러당 약 2,500 토큰이다.
   넘으면 전문을 모델에 넣지 않고 `<temp_dir>/hook_outputs/…`로 흘린 뒤 앞뒤 preview와
   경로만 전달한다. §6 개정 후 본문이 약 2.2k 토큰이라 기본값 여유가 12%뿐이다.
@@ -539,6 +545,8 @@ git status          # 예상 밖 삭제·잔존 확인
 
 ## 10. 완료 기준
 
+실제 설정 설치 후 실측 결과는 §11에 기록했다.
+
 정적
 
 - [ ] `claude plugin validate .` 통과
@@ -572,3 +580,47 @@ Codex 실측
 - [ ] 사용자 홈·설정 파일을 쓰는 코드 없음
 - [ ] MCP·network·credential·telemetry 없음
 - [ ] Ubuntu CI green
+
+---
+
+## 11. 실측 결과
+
+실제 `~/.claude`, `~/.codex`에 설치한 뒤 확인한 것. 2026-08-24.
+
+### Verified
+
+| 항목 | 증거 |
+|---|---|
+| Claude 설치 | `adhd-mode@adhd-mode 0.1.0 ✔ enabled`, Skills (2), Hooks (2) |
+| Codex 설치 | `installed, enabled 0.1.0`, PATH = 작업 트리 |
+| SessionStart 주입 | 헤드리스 세션에서 모델이 `ADHD MODE ACTIVE` 존재를 `YES`로 확인 |
+| 본문 전달 | 모델이 개정된 규칙 9·10·11의 제목을 그대로 인용 |
+| SubagentStart 주입 | `MAIN=YES SUB=YES`. 훅 로그: `(Loading ADHD mode...) provided additionalContext (8743 chars)` |
+| off 스킬 | `/adhd-mode:adhd-mode-off` → `ADHD Mode disabled for this context.` 한 줄 |
+| 출력 성형 | "How do I read a file in Python?" → 서문·맺음말 없이 코드부터 |
+| 런처 견고성 | `CLAUDE_PLUGIN_ROOT`/`PLUGIN_ROOT` 양쪽, root 없으면 무출력 exit 0, SKILL.md 없으면 stderr 진단 |
+| 정적 | validate 3종 통과(`--strict` 포함), 매니페스트 hooks 키 0, LICENSE 무변경 |
+
+### 구현 중 발견한 결함 4건
+
+계획 단계에서는 보이지 않았고 실측으로만 잡힌 것들.
+
+1. **Codex가 로컬 대신 upstream을 설치** — `.agents/plugins/marketplace.json`의 `url` 소스.
+   `list`는 `installed, enabled`를 찍는데 설치본이 다른 코드였다. `local` 상대경로로 수정.
+2. **`additionalContextLimit` 기본 2,500 토큰** — 규칙 개정 후 본문이 2.2k(한도의 87%).
+   넘으면 전문 대신 파일 경로와 preview만 간다. 4000으로 명시.
+3. **`inject.mjs`가 모든 오류를 삼킴** — exit 0 + 빈 stdout은 두 호스트 다 "성공"으로 읽는다.
+   stderr 진단 추가.
+4. **SubagentStart가 등록만 되고 전달은 안 됨** — 평문 stdout이 서브에이전트에 안 닿는다.
+   `plugin details`·validate·exit 0 어디에도 안 나타났고, 실제 서브에이전트를 띄워서만 발견.
+   `hookSpecificOutput` JSON으로 수정.
+
+공통점: **넷 다 "설치 성공"으로 표시되면서 조용히 동작하지 않는 종류였다.**
+정적 검증으로는 하나도 못 잡았다.
+
+### Not verified
+
+- GitHub marketplace 설치 — push 필요
+- Ubuntu CI — push 필요
+- off가 여러 턴에 걸쳐 유지되는지 — 한 번의 헤드리스 호출로는 판정 불가.
+  지시가 도달하고 준수되는 것까지만 확인했다
