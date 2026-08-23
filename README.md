@@ -1,4 +1,4 @@
-# i-have-adhd (fork, 개조 중)
+# adhd-mode (개조 중)
 
 [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd)의 포크다.
 Claude Code와 Codex 전용으로 줄이고, 설치하면 항상 켜지도록 바꾸는 중이다.
@@ -10,12 +10,12 @@ Claude Code와 Codex 전용으로 줄이고, 설치하면 항상 켜지도록 �
 
 ```bash
 claude plugin marketplace add "$PWD"
-claude plugin install i-have-adhd@i-have-adhd
+claude plugin install adhd-mode@adhd-mode
 
 codex plugin marketplace add "$PWD"
-codex plugin add i-have-adhd@i-have-adhd
+codex plugin add adhd-mode@adhd-mode
 ```
 
 ## 라이선스
 
-MIT. 원 저작권은 [`LICENSE`](LICENSE)에 그대로 유지한다.
+MIT. 원 저작권은 [`LICENSE`](LICENSE)에 그대로 유지한다. 자세한 내용은 [`UPSTREAM.md`](UPSTREAM.md).

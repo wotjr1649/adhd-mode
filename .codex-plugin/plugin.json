@@ -1,13 +1,13 @@
 {
-  "name": "i-have-adhd",
-  "version": "0.2.0",
-  "description": "ADHD-friendly output shaping for Codex: action first, numbered steps, no tangents, and visible progress.",
+  "name": "adhd-mode",
+  "version": "0.1.0",
+  "description": "Always-on output shaping for Codex: answer or next action first, real procedures numbered, no preamble or closers, and nothing dropped for the sake of brevity.",
   "author": {
-    "name": "Ayoub G.",
-    "url": "https://github.com/ayghri"
+    "name": "wotjr1649",
+    "url": "https://github.com/wotjr1649"
   },
-  "homepage": "https://github.com/ayghri/i-have-adhd",
-  "repository": "https://github.com/ayghri/i-have-adhd",
+  "homepage": "https://github.com/wotjr1649/adhd-mode",
+  "repository": "https://github.com/wotjr1649/adhd-mode",
   "license": "MIT",
   "keywords": [
     "adhd",
@@ -18,17 +18,18 @@
   ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "I Have ADHD",
-    "shortDescription": "Action-first output for ADHD readers",
-    "longDescription": "Shape Codex responses for an ADHD reader by leading with the next action, numbering multi-step work, suppressing tangents, restating state, and making progress visible.",
-    "developerName": "Ayoub G.",
+    "displayName": "ADHD Mode",
+    "shortDescription": "Answer-first output, always on",
+    "longDescription": "Shape every Codex response so it can be acted on: lead with the answer or the next action, number only real procedures, drop preamble and closing pleasantries, and never cut an error, risk, or requirement to be brief. Applies from install; $adhd-mode-off turns it off for the current context.",
+    "developerName": "wotjr1649",
     "category": "Productivity",
     "capabilities": [
-      "Instructions"
+      "Instructions",
+      "Lifecycle hooks"
     ],
-    "websiteURL": "https://github.com/ayghri/i-have-adhd",
+    "websiteURL": "https://github.com/wotjr1649/adhd-mode",
     "defaultPrompt": [
-      "Use i-have-adhd for this task.",
+      "Use $adhd-mode for this task.",
       "Make this answer action-first and easy to execute.",
       "Review this response for ADHD-friendly structure."
     ],

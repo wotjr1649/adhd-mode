@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 try {
   // Resolve SKILL.md relative to this script's own location, not a trusted env var.
   const scriptDir = path.dirname(fileURLToPath(import.meta.url));
-  const skillPath = path.join(scriptDir, "..", "skills", "i-have-adhd", "SKILL.md");
+  const skillPath = path.join(scriptDir, "..", "skills", "adhd-mode", "SKILL.md");
   if (!fs.existsSync(skillPath)) process.exit(0);
 
   // Strip a leading YAML frontmatter block (--- ... --- at the very top of file).

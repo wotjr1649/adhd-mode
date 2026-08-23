@@ -1,11 +1,11 @@
 {
-  "name": "i-have-adhd",
+  "name": "adhd-mode",
   "interface": {
-    "displayName": "I Have ADHD"
+    "displayName": "ADHD Mode"
   },
   "plugins": [
     {
-      "name": "i-have-adhd",
+      "name": "adhd-mode",
       "source": {
         "source": "local",
         "path": "./"
