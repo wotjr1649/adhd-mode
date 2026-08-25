@@ -19,6 +19,7 @@ on:
       - .codex-plugin/**
       - hooks/**
       - skills/**
+      - evals/**
       - .github/workflows/plugin-load-check.yml
   push:
     branches: [main]
@@ -28,6 +29,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # The A/B verdicts rest entirely on these regexes. A grader that silently
+      # stops matching turns every rule into "no difference", and the standing
+      # decision is to delete a rule that shows no difference. No model calls,
+      # so this is free -- run it first.
+      - name: Check the eval graders against fixed samples
+        run: node evals/graders.test.mjs
 
       - name: Assert the hooks key is declared for Codex and left off for Claude
         run: |
