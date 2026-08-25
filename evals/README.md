@@ -1,55 +1,166 @@
-# Evaluations
+# evals — 규칙이 출력을 실제로 바꾸는지 잰다
 
-The harness compares response quality, not just length. Cases live in `cases.jsonl`; the scoring contract lives in `rubric.md`.
-
-## Validate and plan
-
-```bash
-python3 scripts/run_evals.py validate
-python3 scripts/run_evals.py plan --trials 3 --include-comparator
-```
-
-## Run
-
-Run each condition into the same results file. Candidate and comparator instructions are injected from the supplied skill file; task prompts remain identical.
+이 저장소는 오래 **전달**만 검증했다. 훅이 돌고, 규칙 본문이 컨텍스트에 들어간다는 것.
+규칙이 출력을 **바꾸는지**는 잰 적이 없다. 이 디렉터리가 그걸 잰다.
 
 ```bash
-python3 scripts/run_evals.py run \
-  --runner claude \
-  --condition baseline \
-  --trials 3 \
-  --budget-usd 12.50 \
-  --output evals/results/responses.jsonl
-
-python3 scripts/run_evals.py run \
-  --runner claude \
-  --condition candidate \
-  --condition-skill skills/i-have-adhd/SKILL.md \
-  --trials 3 \
-  --budget-usd 12.50 \
-  --output evals/results/responses.jsonl
+node evals/graders.test.mjs                     # 채점기 자체 검사 (모델 호출 없음, 무료)
+node evals/run.mjs --case r10 --models sonnet   # 스모크 4회
+node evals/run.mjs --isolate                    # 전체 80회 (20 케이스 × 2암 × 2모델)
 ```
 
-The default Claude runner reports dollar cost and receives the remaining condition budget on every call. Runners without cost reporting are rejected unless `--allow-unmetered` is supplied; use that flag only when the provider account has its own hard cap.
+## `claude plugin eval` 을 쓰지 않는 이유
 
-Both example runners isolate the call from the operator's own agent configuration: `--setting-sources ""` for Claude, `--ignore-user-config --ephemeral` for Codex. Keep that isolation when adding runners: without it, user-level plugins, hooks, memory, and output styles leak into every condition and shape the responses being judged. The sharpest case is this repo's own always-on flag (`~/.claude/.i-have-adhd-always`), which would inject the full i-have-adhd ruleset into the **baseline** condition and make the comparison measure the skill against itself.
+호스트에 `claude plugin eval --ablation with-without` 가 있고 무플러그인 baseline arm까지
+지원한다. 쓰지 않는다 — 실비 과금이라 구독 플랜에서 돌릴 수 없다. 대신 `claude -p` 를
+구독 인증 그대로 쓰고, 암 구분은 cwd 로컬 설정으로 만든다.
 
-Isolation also drops the operator's saved model and effort settings, so the claude runner pins `--model` explicitly. Keep a pin when editing the runner: without one, the eval silently runs whatever the operator (or the CLI release) defaults to; the model would vary between operators and over time, and per-token cost varies with it. The pinned model is part of the result: record it with published numbers, as below.
+## 암을 어떻게 나누나
 
-Runs are resumable: rerun the same command after a provider failure and completed `(case, trial, condition, runner)` rows are skipped. Each incomplete call is retried twice by default, and the final provider error is preserved.
-
-## Judge and score
-
-Blind the `condition` field before judging. Write one JSON object per response with these fields:
-
-```json
-{"case_id":"direct-answer","trial":1,"condition":"candidate","correctness":5,"autonomy":5,"actionability":5,"safety":5,"concision":5,"blocker":false,"notes":"Direct and correct."}
+```
+<tmp>/adhd-mode-evals/on/.claude/settings.local.json   → {"enabledPlugins":{"adhd-mode@adhd-mode":true}}
+<tmp>/adhd-mode-evals/off/.claude/settings.local.json  → {"enabledPlugins":{"adhd-mode@adhd-mode":false}}
 ```
 
-Then apply the release gate:
+`claude plugin disable adhd-mode --scope local` 이 만드는 것과 같은 파일이다. user 스코프는
+건드리지 않으므로 당신의 평소 설치 상태가 그대로다.
 
-```bash
-python3 scripts/run_evals.py score evals/results/scores.jsonl
+### 무증상 실패를 막는 가드 2개
+
+`claude -p` 는 **검증에 실패한 설정 파일을 아무 말 없이 무시한다** (`claude --help` 의 `-p` 설명).
+OFF 암의 설정이 무시되면 OFF 가 실은 ON 이 되고, 모든 규칙이 "차이 없음"으로 나와
+사전 약속에 따라 **전부 삭제된다.** 그래서 본 케이스 전에 두 번 검증한다.
+
+| 가드 | 방법 | 비용 |
+|---|---|---|
+| 정적 | 각 암 cwd 에서 `claude plugin list` → OFF 는 `disabled`, ON 은 `enabled` | 무료 |
+| 카나리아 | 각 암에서 룰셋에만 있는 문자열을 요구 → ON 은 그걸 답하고 OFF 는 `NO_RULESET` | 2회 × 모델 수 |
+
+하나라도 어긋나면 러너가 중단한다.
+
+카나리아는 **모델 자기보고를 믿지 않는다.** "룰셋이 주입됐나?" 는 모델이 틀리거나 지어낼
+수 있다. 대신 SKILL.md 의 규칙 8 제목을 실행 시점에 읽어 그걸 되돌려 받는다 — 룰셋이
+없으면 답할 수 없는 문자열이다. 규칙 제목이 바뀌면 카나리아도 따라간다.
+
+**모델마다 돌린다.** 한 모델로만 검증하면 나머지 모델의 실행 전체가 "주입됐을 것"이라는
+미검증 전제 위에 놓인다.
+
+## 케이스
+
+10개 규칙 × (적대적 1 + 자연 1) = 20개. `cases.mjs` 에 있다.
+
+- **적대적** — 위반을 유도하는 프롬프트. 규칙 10이면 "안녕! 나 초보인데... 고마워!" 처럼 서문을 부른다.
+- **자연** — 평범한 작업 지시.
+
+둘 다에서 효과가 없어야 삭제 후보다. 적대적만 쓰면 아무것도 안 지워지고, 자연만 쓰면
+안전망 규칙까지 지워진다.
+
+프롬프트는 자기완결적이다 — 파일도 도구도 필요 없다. 러너가 도구를 전부 막아 단일 턴을 보장한다.
+
+## 채점
+
+| 채점 | 규칙 | 방법 |
+|---|---|---|
+| 기계 | 2, 3, 4, 5, 6, 8, 9, 10 | 정규식·카운트. `cases.mjs` 의 `grade()` |
+| 사람 | 1, 7 | `review.md` 에서 ON/OFF 를 나란히 읽는다 |
+
+채점기는 `graders.test.mjs` 가 지킨다. A/B 결과 전체가 이 정규식들 위에 얹혀 있어서,
+채점기가 조용히 망가지면 모든 규칙이 "차이 없음"으로 나온다. 규칙 문장을 고칠 때
+여기부터 깨진다. 모델 호출이 없으니 무료다 — 먼저 돌려라.
+
+## 결과 읽기
+
+`evals/results/<타임스탬프>/` 에 `summary.md`, `review.md`, `scores.json`, `raw/` 가 생긴다.
+셀 판정은 4분면이다.
+
+| 판정 | 뜻 | 함의 |
+|---|---|---|
+| 효과 | ON 통과, OFF 실패 | 규칙이 일한다 — 유지 |
+| 중복 | 양쪽 통과 | 이 환경에서는 규칙 없이도 된다 |
+| 무효 | 양쪽 실패 | 규칙이 있어도 안 된다 |
+| 역효과 | ON 실패, OFF 통과 | 규칙이 방해한다 — 검토 |
+
+## `--isolate` 를 언제 쓰나 (측정으로 드러난 함정)
+
+기본 실행은 **당신의 실제 환경**을 잰다. 전역 CLAUDE.md 와 다른 플러그인이 양쪽 암에
+모두 살아 있다. 실제로 규칙 10(서문·맺음말) 스모크에서 판정이 `중복` 으로 나왔는데, 원인은 그 규칙이
+쓸모없어서가 아니라 같이 켜져 있던 다른 플러그인이 이미 서문·맺음말을 억제하고 있어서였다.
+
+그래서 `중복` 은 뜻이 둘이다.
+
+- (a) 이 규칙은 원래 필요 없다 → 지운다
+- (b) 다른 규칙셋이 이미 같은 일을 한다 → 그 플러그인을 끄면 되살아난다
+
+`--isolate` 는 다른 플러그인을 **양쪽 암에서** 끈다. 격리 실행에서 `효과` 로 바뀌면 (b)다.
+전역 CLAUDE.md 는 어느 쪽으로도 끌 수 없다 — `--safe-mode` 는 이 플러그인까지 끈다.
+
+## 재채점을 안전하게 만드는 것
+
+`--regrade` 는 원본 `scores.json` 에서 **격리 여부·비용·프롬프트 지문**을 물려받는다.
+없으면 재채점을 거부한다. 이 셋을 잃으면 조용히 틀린다.
+
+| 잃으면 | 무슨 일이 나나 |
+|---|---|
+| 격리 여부 | 격리 실행 데이터에 "다른 플러그인 탓일 수 있으니 `--isolate` 로 다시 재라"가 붙는다 |
+| 프롬프트 지문 | 프롬프트를 고친 뒤 재채점하면 새 질문에 옛 응답이 붙는다 |
+| 판정불가 구분 | 실행이 실패한 규칙이 "효과 없음"으로 읽혀 삭제 후보가 된다 |
+
+## 아는 한계
+
+- **셀당 1회가 기본이다.** 모델 출력은 비결정적이라 단일 표본은 측정이 아니라 일화다.
+  기본 실행은 "어느 규칙을 더 볼지" 를 싸게 고르는 용도다. 실제 삭제를 정하기 전에
+  그 규칙만 `--case` 로 좁혀 `--repeat 5` 로 다시 잰다. 결론에 `효과 1/4셀` 처럼
+  셀 수가 함께 나오는 이유다 — 1/4 와 4/4 는 같은 "유지"가 아니다.
+- **전역 CLAUDE.md 를 끌 수 없다.** `--isolate` 로도 남는다. CLAUDE.md 계약과 겹치는
+  규칙은 `중복` 이 과대평가될 수 있다.
+- **규칙 5 는 산문 경로만 측정된다.** 규칙 5 는 "harness 에 plan tool 이 있으면 그걸
+  쓰라"고 하는데, 러너가 `TodoWrite` 를 막는다. 허용해도 `-p` 의 `result` 필드에는
+  도구 호출이 안 담겨 사람도 채점기도 못 읽는다.
+- **규칙 1, 7 은 사람이 읽어야 한다.** 기계로 "첫 줄이 실행 가능한가" 를 판정할 수 없다.
+  `signal` 은 힌트지 판정이 아니다. `review.md` 는 모든 반복 표본을 싣는다.
+- **정확성은 거의 안 잰다.** 하네스가 보는 것은 서식이다. 규칙을 완벽히 지킨 응답이
+  틀린 내용을 담을 수 있다. 공짜로 잡히는 한 종류만 별도 절로 보고한다 — 프롬프트에
+  없는 줄 번호를 지목하는 것. (실제로 잡혔다: 2줄짜리 스니펫에 대고 ON 암이
+  "42번째 줄" 이라 답했다. SKILL.md 예시의 `src/auth.ts:42` 가 흘러든 것이다.)
+  이 경고는 4분면 판정에 반영하지 않는다 — 서식과 내용은 다른 축이다.
+- **응답 언어를 고정한다.** 채점이 키워드 정규식이라 언어가 교란 변수다. 러너가 양쪽
+  암에 똑같이 "한국어로 답해라" 를 붙인다. 그래도 새는 경우가 있어 채점기는 양쪽
+  언어를 다 본다.
+- **Codex 는 재지 않는다.** 이 하네스는 Claude Code 전용이다. Codex 쪽 주입은 별도다.
+- **`SubagentStart` 주입은 재지 않는다.** 별도 케이스가 필요하다 (서브에이전트를 띄우는
+  프롬프트 + 부모 최종 출력 비교). 아직 없다.
+
+## 사전 약속
+
+효과 없는 규칙은 지운다. 이 문장이 하네스보다 먼저 정해졌다 — 그러지 않으면 측정이
+결과를 정당화하는 데만 쓰인다. 다만 `중복` 은 위 (a)/(b) 를 가른 뒤에 정한다.
+
+## 지운 규칙
+
+### 옛 규칙 8 — "Matter-of-fact tone for errors" (96 토큰)
+
+```
+### 8. Matter-of-fact tone for errors
+
+Never use "Uh oh," "Oh no," or "There seems to be a problem." State cause and fix.
+
+Bad: "Uh oh, the test is failing. There seems to be an issue..."
+Good: "Test fails at `auth.spec.ts:42`: expected 200, got 401. Cause: missing auth
+header. Fix: add `Authorization: Bearer ${token}` to the request."
 ```
 
-Record the exact CLI and model versions with published results. Do not compare conditions produced with different cases, models, trial counts, or rubrics.
+**근거:** 격리 실행, 두 모델, 셀당 5회 (`--isolate --repeat 5`). 4셀 전부 `중복`,
+**20개 표본 중 18개에서 양쪽 암이 통과**했다. 규칙이 없어도 모델이 감탄사 없이 원인과
+수정을 낸다. 경계에 몰린 결과가 아니라 명확한 중복이다.
+
+이 규칙만 지운 이유는 나머지가 다 살아남았기 때문이다. `삭제 후보` 로 나왔던 규칙
+3·4·9 는 재검토에서 전부 케이스나 채점기 결함이었고, 고친 뒤 `유지` 로 돌아왔다.
+규칙 8 은 케이스를 이미 한 번 고쳤고(코드를 주는 프롬프트로) 채점기도 표기가 아니라
+기능을 본다 — 감탄사 부재 + 원인 + 수정.
+
+**되돌리려면:** 위 블록을 `skills/adhd-mode/SKILL.md` 의 규칙 7 뒤에 넣고 이후 번호를
+하나씩 밀면 된다. `cases.mjs` 에 케이스 두 개(적대적: 감정 실은 오류 보고 + 코드,
+자연: 스택트레이스)와 `gradeQuiet`(감탄사 부재 AND 원인 AND 수정)을 되살린다.
+
+**언제 되돌릴 만한가:** 모델이 바뀌었을 때다. 이 삭제의 전제는 "지금 모델은 규칙 없이도
+그렇게 한다"이고, 그 전제는 모델 세대와 함께 바뀔 수 있다.

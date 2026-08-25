@@ -1,15 +1,14 @@
 {
-  "name": "i-have-adhd",
+  "name": "adhd-mode",
   "interface": {
-    "displayName": "I Have ADHD"
+    "displayName": "ADHD Mode"
   },
   "plugins": [
     {
-      "name": "i-have-adhd",
+      "name": "adhd-mode",
       "source": {
-        "source": "url",
-        "url": "https://github.com/ayghri/i-have-adhd.git",
-        "ref": "main"
+        "source": "local",
+        "path": "./"
       },
       "policy": {
         "installation": "AVAILABLE",

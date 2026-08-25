@@ -3,43 +3,71 @@ name: plugin loads in Claude Code
 # Installs the plugin from this checkout into a scratch CLAUDE_CONFIG_DIR and
 # fails if it does not reach "enabled". Catches load-layer breakage that
 # schema validation misses, e.g. the duplicate hooks declaration in #61.
+#
+# `claude plugin validate .` only reads the marketplace manifest when one is
+# present, so it passes on a syntactically broken hooks/hooks.json. The second
+# validate call targets the plugin manifest, which pulls in hooks and skills.
+#
+# Neither call looks at .codex-plugin/plugin.json, and no Codex command reports
+# whether a plugin registered any hooks -- `codex plugin list` prints
+# "installed, enabled" either way. The manifest assertion below is the only
+# static check that catches the two-sided hooks-key invariant.
 on:
   pull_request:
     paths:
       - .claude-plugin/**
+      - .codex-plugin/**
       - hooks/**
       - skills/**
-      - tests/test_always_on_hooks.py
+      - evals/**
       - .github/workflows/plugin-load-check.yml
   push:
     branches: [main]
 
 jobs:
-  hook-parity:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-      - name: Test native hook implementations
-        run: python -m unittest tests.test_always_on_hooks -v
-
   load:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # The A/B verdicts rest entirely on these regexes. A grader that silently
+      # stops matching turns every rule into "no difference", and the standing
+      # decision is to delete a rule that shows no difference. No model calls,
+      # so this is free -- run it first.
+      - name: Check the eval graders against fixed samples
+        run: node evals/graders.test.mjs
+
+      - name: Assert the hooks key is declared for Codex and left off for Claude
+        run: |
+          node -e '
+            const fs = require("fs");
+            const codex = JSON.parse(fs.readFileSync(".codex-plugin/plugin.json", "utf8"));
+            const claude = JSON.parse(fs.readFileSync(".claude-plugin/plugin.json", "utf8"));
+            if (typeof codex.hooks !== "string") {
+              throw new Error(".codex-plugin/plugin.json has no hooks key. Codex does not auto-load hooks/hooks.json, so nothing would register and codex plugin list would still say installed, enabled.");
+            }
+            if (claude.hooks) {
+              throw new Error(".claude-plugin/plugin.json declares hooks. Claude auto-loads the conventional path; a second declaration is a duplicate and drops the whole hook set (upstream ed6a0a2).");
+            }
+            const target = codex.hooks.replace(/^\.\//, "");
+            JSON.parse(fs.readFileSync(target, "utf8"));
+            console.log("ok: codex hooks -> " + target);
+          '
+
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
+
+      - name: Validate the marketplace, plugin, hooks, and skill manifests
+        run: |
+          claude plugin validate .
+          claude plugin validate .claude-plugin/plugin.json
+
       - name: Install the plugin from this checkout into a scratch config
         run: |
           export CLAUDE_CONFIG_DIR="$RUNNER_TEMP/claude-scratch"
           mkdir -p "$CLAUDE_CONFIG_DIR"
           claude plugin marketplace add "$GITHUB_WORKSPACE"
-          claude plugin install i-have-adhd@i-have-adhd
+          claude plugin install adhd-mode@adhd-mode
           claude plugin list | tee plugin-list.txt
           grep -q "✔ enabled" plugin-list.txt || {
             echo "::error::plugin failed to load; see claude plugin list output above"
