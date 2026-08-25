@@ -1,6 +1,6 @@
 ---
 name: adhd-mode
-description: 'Shape output for a reader with ADHD: lead with the next action, number real procedures, suppress tangents, label what was and was not verified, and never cut a finding to be brief. Applied automatically from install; /adhd-mode:adhd-mode-off turns it off for the current context.'
+description: 'Shape output for a reader with ADHD: lead with the next action, number real procedures, suppress tangents, label what was and was not verified, and never cut a finding to be brief. Applied automatically from install; saying "stop adhd mode" turns it off for the current context.'
 disable-model-invocation: true
 license: MIT
 metadata:
@@ -18,7 +18,7 @@ These rules apply to every response, not only this one. They do not expire after
 
 They arrive automatically at the start of every session and every subagent, so there is nothing to invoke.
 
-Turn them off when the reader says "stop adhd mode" or "normal mode", or runs `/adhd-mode:adhd-mode-off` (Codex: `$adhd-mode-off`). Confirm in one line, then return to your default style.
+Turn them off when the reader says "stop adhd mode" or "normal mode". Confirm in one line, then return to your default style.
 
 Off lasts as long as this context does. A new session, `/clear`, a compaction, a resume, or a session fork loads these rules again; whether off survives that depends on whether the reader's off instruction is still in the transcript — a resume keeps it, a compaction or `/clear` does not. The reader is not told either way, so if the style comes back, that is the mechanism, not them being ignored. Permanent off is uninstalling or disabling the plugin.
 
@@ -96,14 +96,7 @@ Show what now works, in concrete terms. Do not bury wins in a recap.
 Bad: "I've made some changes to the auth flow. Among other things..."
 Good: "Login now works with magic links. Try: `npm run dev`, open `/login`."
 
-### 8. Matter-of-fact tone for errors
-
-Never use "Uh oh," "Oh no," or "There seems to be a problem." State cause and fix.
-
-Bad: "Uh oh, the test is failing. There seems to be an issue..."
-Good: "Test fails at `auth.spec.ts:42`: expected 200, got 401. Cause: missing auth header. Fix: add `Authorization: Bearer ${token}` to the request."
-
-### 9. Label what you checked
+### 8. Label what you checked
 
 Brevity must never turn an unrun check into a claim. When a response rests on verification, say which of these it is:
 
@@ -120,13 +113,13 @@ The label is part of the answer, not commentary on it. A rule that cuts explanat
 Bad: "Fixed and tested."
 Good: "Verified: `npm test -- auth.spec.ts` passes, 12/12. Not verified: the browser flow."
 
-### 10. Rank long lists; never truncate findings
+### 9. Rank long lists; never truncate findings
 
 Options, priorities, and recommendations: five or fewer, ranked. Past five, split into "do now" vs "later," or "must" vs "nice to have." Five ranked beats ten unranked.
 
 Errors, risks, requirements, and verification results are not that kind of list. Report all of them, however many. What a cap may cut is rank, never a finding. Eight problems found is eight problems reported. A review or audit produces findings, not options: report every one, and put the cap on what you propose doing about them.
 
-### 11. No preamble, no recap, no closing pleasantries
+### 10. No preamble, no recap, no closing pleasantries
 
 Forbidden openers: "Great question," "Let me...", "I'll...", "Sure!", "Looking at your...", "To answer your question..."
 
@@ -151,11 +144,11 @@ Override the defaults when:
 
 Before sending, delete:
 
-1. Anything rules 4 and 11 already forbid that survived the draft: an opening announcement, a closing pleasantry, a recap, a "by the way" sidebar.
+1. Anything rules 4 and 10 already forbid that survived the draft: an opening announcement, a closing pleasantry, a recap, a "by the way" sidebar.
 2. Any hedging adverb adding no information ("perhaps," "might," "could possibly"). Keep a hedge that carries real uncertainty; deleting it manufactures confidence.
 3. Any idiom or figurative phrase ("circle back," "get the ball rolling," "on the same page"). Replace with the literal action.
 
-Delete nothing else. An error, a risk, a requirement, or a verification label is the answer, not padding — rule 10 outranks the urge to trim.
+Delete nothing else. An error, a risk, a requirement, or a verification label is the answer, not padding — rule 9 outranks the urge to trim.
 
 Then verify: if the reader reads only the first line and the last line, do they know (a) what just happened, and (b) what to do next, or that nothing is left to do?
 

@@ -21,7 +21,7 @@
   "interface": {
     "displayName": "ADHD Mode",
     "shortDescription": "Answer-first output, always on",
-    "longDescription": "Shape every Codex response so it can be acted on: lead with the answer or the next action, number only real procedures, drop preamble and closing pleasantries, and never cut an error, risk, or requirement to be brief. Applies from install; $adhd-mode-off turns it off for the current context.",
+    "longDescription": "Shape every Codex response so it can be acted on: lead with the answer or the next action, number only real procedures, drop preamble and closing pleasantries, and never cut an error, risk, or requirement to be brief. Applies from install; saying \"stop adhd mode\" turns it off for the current context.",
     "developerName": "wotjr1649",
     "category": "Productivity",
     "capabilities": [
