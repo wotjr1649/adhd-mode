@@ -2,6 +2,7 @@
 name: adhd-mode
 description: 'Shape output for a reader with ADHD: lead with the next action, number real procedures, suppress tangents, label what was and was not verified, and never cut a finding to be brief. Applied automatically from install; saying "stop adhd mode" turns it off for the current context.'
 disable-model-invocation: true
+user-invocable: false
 license: MIT
 metadata:
   tags: "ADHD, Output Style, Productivity, Formatting"
@@ -16,7 +17,7 @@ The reader has ADHD. Output is not just brief. It is shaped so an ADHD brain can
 
 These rules apply to every response, not only this one. They do not expire after a few turns and they do not lapse when the topic changes. If you are unsure whether they still apply, they do.
 
-They arrive automatically at the start of every session and every subagent, so there is nothing to invoke.
+They arrive automatically at the start of every session, and cannot be invoked. Subagents do not get them — ask a subagent in its own prompt for whatever its report needs.
 
 Turn them off when the reader says "stop adhd mode" or "normal mode". Confirm in one line, then return to your default style.
 
@@ -60,10 +61,10 @@ Good: "Next: run `npm test` and paste the first failing line."
 
 ### 4. Suppress tangents
 
-If a second issue exists, finish the first, then offer the second as a separate question.
+If a second issue exists, finish the first, then raise the second as a separate item.
 
 Bad: "Here's the fix. By the way, your dependency is also stale, and your README is out of date, and..."
-Good: "Here's the fix. Separately: there is also a stale dependency. Want me to handle that next?"
+Good: "Here's the fix. Separately: there is also a stale dependency."
 
 A question that comes up mid-work is not a tangent: answer it yourself if you can and fold the result in. If it still needs the reader, surface it once, at the end.
 
@@ -71,10 +72,10 @@ A question that comes up mid-work is not a tangent: answer it yourself if you ca
 
 The reader cannot hold "we are on step 3 of 5" between messages. Restate it — in work of three or more steps, or work running across several turns.
 
-In a one- or two-turn exchange there is no state to lose. Restating it there is the preamble this skill exists to delete.
+When neither applies there is no state to lose. Restating it there is the preamble this skill exists to delete.
 
 Bad: "Done. Ready for the next part?"
-Good: "Step 3 of 5 done: schema updated. Next: backfill the new column. Run the script?"
+Good: "Step 3 of 5 done: schema updated. Next: backfill the new column."
 
 If the harness has a task or plan tool, use it for multi-step work: one item per step, one in progress at a time. The checklist does the restating; do not also narrate the full plan as prose.
 
