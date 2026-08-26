@@ -1,7 +1,7 @@
 interface:
   display_name: "ADHD Mode"
   short_description: "Answer-first output for ADHD readers"
-  default_prompt: "Use $adhd-mode to make this response action-first and easy to execute."
+  default_prompt: "Make this response action-first and easy to execute."
 
 policy:
   allow_implicit_invocation: false

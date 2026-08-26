@@ -30,7 +30,7 @@
     ],
     "websiteURL": "https://github.com/wotjr1649/adhd-mode",
     "defaultPrompt": [
-      "Use $adhd-mode for this task.",
+      "Give me the next action first, then the details.",
       "Make this answer action-first and easy to execute.",
       "Review this response for ADHD-friendly structure."
     ],

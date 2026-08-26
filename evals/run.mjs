@@ -308,7 +308,7 @@ async function main() {
 
   // 재채점은 원본 scores.json 에서 물려받는다 — 여기서 다시 조회하지 않는다.
   let silence = !a.regrade && a.isolate ? await otherPlugins(HERE) : [];
-  let runs, origin = null, originCost = 0, staleCases = [];
+  let runs, origin = null, originCost = 0, staleCases = [], originHashed = true;
   if (a.regrade) {
     const loaded = loadRuns(a.regrade, cases);
     runs = loaded.runs;
@@ -316,7 +316,13 @@ async function main() {
       console.log(`        제외: 프롬프트가 바뀐 케이스 ${loaded.stale.length}개 — ${loaded.stale.join(", ")}`);
       console.log(`              이 케이스는 다시 실행해야 한다. 옛 응답은 지금 프롬프트의 답이 아니다.`);
     }
-    if (!loaded.hashed) {
+    // 지문이 없으면 거부하지 않고 통과시킨다 — 지문 기록 이전 결과가 디스크에 남아
+    // 있고, 그걸 재채점 불가로 만들 이유는 없다. 다만 콘솔 경고는 흘러간다. 나중에
+    // 이 결과를 읽는 사람에게 남는 것은 summary.md 와 scores.json 뿐이므로, 격리
+    // 여부와 같은 자리에 실어 보낸다. 그러지 않으면 지문 없이 채점한 판정이 지문을
+    // 갖춘 판정과 구별되지 않는다.
+    originHashed = loaded.hashed;
+    if (!originHashed) {
       console.log(`        경고: 원본에 프롬프트 지문이 없다 (지문 기록 이전 결과). 케이스가 바뀌었는지 확인할 수 없다.`);
     }
     staleCases = loaded.stale;
@@ -430,6 +436,10 @@ async function main() {
       ? [`출처: ${origin} 을 재채점한 것이다. 모델 출력은 그 실행의 것이고 (원본 비용 $${originCost.toFixed(4)}),`,
          `      바뀐 것은 채점 로직뿐이다. 아래 조건은 원본 실행의 조건이다.`]
       : []),
+    ...(origin && !originHashed
+      ? [`경고: 원본에 프롬프트 지문이 없다 — 케이스가 그 뒤 바뀌었는지 확인할 수 없다.`,
+         `      지금 프롬프트가 그때와 다르면 아래 판정은 새 질문에 옛 응답을 붙인 것이다.`]
+      : []),
     `실측 비용: $${(origin ? originCost : cost).toFixed(4)} · 격리: ${a.isolate ? silence.join(", ") || "(끌 것 없음)" : "없음"}`, "",
     ...(a.isolate
       ? [`> 격리 실행이다 — 다른 플러그인을 양쪽 암에서 껐다. 전역 CLAUDE.md 는 끌 수 없어`,
@@ -495,7 +505,7 @@ async function main() {
   fs.writeFileSync(path.join(outDir, "scores.json"),
     JSON.stringify({ stamp, models: a.models, cost: origin ? originCost : cost,
       isolate: a.isolate, silenced: silence, regradedFrom: origin,
-      repeat: a.repeat, fabrications, staleCases,
+      repeat: a.repeat, fabrications, staleCases, originHashed: origin ? originHashed : null,
       promptHashes: Object.fromEntries(cases.map((c) => [c.id, promptHash(c.prompt)])),
       rows, perRule,
       failed: failed.map((f) => ({ id: f.c.id, arm: f.arm, model: f.model, error: f.error })) }, null, 2) + "\n");
