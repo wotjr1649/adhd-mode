@@ -54,7 +54,6 @@ codex plugin add adhd-mode@adhd-mode
 ```bash
 grep "adhd-mode@adhd-mode:" ~/.codex/config.toml
 # [hooks.state."adhd-mode@adhd-mode:hooks/hooks.json:session_start:0:0"]
-# [hooks.state."adhd-mode@adhd-mode:hooks/hooks.json:subagent_start:0:0"]
 ```
 
 `codex exec` 같은 비대화형 실행으로는 승인을 받을 수 없다. 훅 내용이 바뀌어 해시가
@@ -63,7 +62,7 @@ grep "adhd-mode@adhd-mode:" ~/.codex/config.toml
 ### 확인
 
 ```bash
-claude plugin details adhd-mode     # Skills (1), Hooks (2) 가 보여야 한다
+claude plugin details adhd-mode     # Skills (1), Hooks (1) 가 보여야 한다
 codex plugin list                   # installed, enabled
 ```
 
@@ -114,7 +113,7 @@ codex plugin remove adhd-mode
 2. 여러 단계 작업은 번호를 매긴다
 3. 남은 작업이 있을 때만 다음 행동으로 끝낸다
 4. 곁가지를 억제한다
-5. 3단계 이상 작업에서만 진행 상태를 재진술한다
+5. 3단계 이상이거나 여러 턴에 걸친 작업에서 진행 상태를 재진술한다
 6. 근거가 있을 때만 시간을 추정한다
 7. 완료된 작업을 구체적으로 보여준다
 8. 검증 여부를 `Verified` / `Not verified` / `Blocked by`로 명시한다
@@ -162,7 +161,8 @@ Codex는 이 경로를 자동으로 읽지 않는다. `.codex-plugin/plugin.json
 
 플러그인이 `enabled`인데 배너가 안 뜨는 경우가 있다. 순서대로 본다.
 
-1. **훅이 등록됐나** — `claude plugin details adhd-mode`가 `Hooks (2)`를 보여야 한다.
+1. **훅이 등록됐나** — `claude plugin details adhd-mode`가 `Hooks (1) SessionStart`를
+   보여야 한다. 훅은 하나뿐이다 — `SubagentStart` 주입은 지웠다.
 2. **Codex: 훅이 신뢰됐나** — `grep "adhd-mode@adhd-mode:" ~/.codex/config.toml` 에 항목이
    없으면 승인되지 않은 것이다. 위 설치 절 참조.
    **UI에는 정상으로 보이는데 규칙만 안 들어가는 가장 유력한 경로다.**

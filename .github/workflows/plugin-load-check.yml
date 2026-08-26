@@ -37,6 +37,13 @@ jobs:
       - name: Check the eval graders against fixed samples
         run: node evals/graders.test.mjs
 
+      # The launcher runs under `catch` so a broken plugin root never blocks session
+      # start -- which also means the host reports success when nothing was injected.
+      # This runs the shipped command string itself, so a silent-failure regression
+      # fails here instead of in a user's session. No model calls, so this is free.
+      - name: Check the hook launcher reports its own failures
+        run: node hooks/hooks.test.mjs
+
       - name: Assert the hooks key is declared for Codex and left off for Claude
         run: |
           node -e '
