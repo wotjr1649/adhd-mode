@@ -91,6 +91,13 @@ codex plugin list                   # installed, enabled
 | compaction | 예 | 아니오 (실측) |
 | `/clear`, 새 세션 | 예 | 아니오 (트랜스크립트 소멸) |
 | 세션 fork | 예 | 미측정 |
+| 서브에이전트 스폰 | 아니오 | 무관 (주입이 없으니 규칙도 없다) |
+
+서브에이전트 행은 원래 반대였다. `SubagentStart` 훅이 matcher 없이 모든 서브에이전트에
+룰셋을 주입했고, 훅에 끄기 분기가 없어 **껐는데 위임하면 규칙이 되살아났다**. 그 주입을
+지웠다 — 서브에이전트 출력의 독자는 사람이 아니라 부모 모델이고, 사람에게 닿는 서식은
+부모 세션의 주입이 이미 담당한다. 서브에이전트에게 검증 라벨을 받고 싶으면 위임
+프롬프트에 직접 적는 편이 싸고 정확하다.
 
 영구히 끄려면:
 
@@ -123,22 +130,25 @@ codex plugin remove adhd-mode
 ## 동작 방식
 
 ```text
-SessionStart(startup|resume|clear|compact|fork)  ┐
-SubagentStart                                    ┘→ hooks/inject.mjs
-                                                    → skills/adhd-mode/SKILL.md 본문을 stdout으로
+SessionStart(startup|resume|clear|compact|fork)
+  → hooks/inject.mjs
+  → skills/adhd-mode/SKILL.md 본문을 stdout으로
 ```
 
 - 훅은 파일 하나를 읽어 출력할 뿐이다. 어디에도 쓰지 않는다
 - 상태 파일, 홈 디렉터리 수정, 네트워크, MCP, telemetry 없음
 - 실패해도 세션 시작을 막지 않는다 (exit 0). 다만 이유는 stderr에 남긴다
-- 비용: 세션당 **1,933 토큰**(실측, o200k), 서브에이전트당 동일.
-  `claude plugin details` 의 `Always-on: ~103 tok` 과 `Hooks (2) (harness-only — no
-  model context cost)` 는 이 플러그인에 대해 틀리다. 실제 주입량은 위 수치다
+- 비용: 세션당 **1,933 토큰**(o200k 실측, 본문 8,254 바이트 기준. 현재 8,262 바이트).
+  서브에이전트는 0 — 주입하지 않는다.
+  `claude plugin details` 의 `Always-on: ~103 tok` 과 `Hooks (1) SessionStart (harness-only
+  — no model context cost)` 는 이 플러그인에 대해 틀리다. 실제 주입량은 위 수치다
 - `additionalContextLimit: 4000` 을 명시한다. Codex 기본값은 핸들러당 2,500 토큰이고
   (공식 config-schema의 `HookHandlerConfig`), 넘으면 전문을 모델에 넣지 않고 파일로
   흘린 뒤 앞뒤 preview만 준다. 본문 1,933는 기본값의 77%라 여유가 없다
-- 스킬은 명시 호출 전용 (`disable-model-invocation`,
-  `allow_implicit_invocation: false`). 훅이 본문을 주입하므로 스킬 자체를 부를 일은 없다
+- 스킬은 모델도 사용자도 부를 수 없다 (`disable-model-invocation`, `user-invocable: false`,
+  Codex 쪽 `allow_implicit_invocation: false`). 훅이 본문을 주입하므로 부를 일이 없다.
+  `disable-model-invocation` 은 모델 자동 호출만 막고 슬래시 명령은 그대로 남기며, 사용자
+  호출에는 중복 감지가 걸리지 않아 치면 같은 본문이 한 벌 더 들어갔다 — 그래서 둘 다 끈다
 
 `hooks/hooks.json`은 관례 경로다. Claude Code는 이 경로를 자동으로 읽으므로
 `.claude-plugin/plugin.json`에서는 참조하지 않는다 — 참조하면 중복 등록으로 훅 세트

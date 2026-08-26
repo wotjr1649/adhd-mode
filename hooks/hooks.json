@@ -13,19 +13,6 @@
           }
         ]
       }
-    ],
-    "SubagentStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node -e \"(async()=>{const root=process.env.CLAUDE_PLUGIN_ROOT||process.env.PLUGIN_ROOT;if(root)await import(require('node:url').pathToFileURL(require('node:path').join(root,'hooks','inject.mjs')).href)})().catch(()=>{})\"",
-            "timeout": 30,
-            "statusMessage": "Loading ADHD mode...",
-            "additionalContextLimit": 4000
-          }
-        ]
-      }
     ]
   }
 }
