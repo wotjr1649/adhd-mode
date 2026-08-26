@@ -137,7 +137,7 @@ SessionStart(startup|resume|clear|compact|fork)
 - 훅은 파일 하나를 읽어 출력할 뿐이다. 어디에도 쓰지 않는다
 - 상태 파일, 홈 디렉터리 수정, 네트워크, MCP, telemetry 없음
 - 실패해도 세션 시작을 막지 않는다 (exit 0). 다만 이유는 stderr에 남긴다
-- 비용: 세션당 **1,933 토큰**(o200k 실측, 본문 8,254 바이트 기준. 현재 8,262 바이트).
+- 비용: 세션당 **1,933 토큰**(o200k 실측, 본문 8,254 바이트 기준. 현재 8,498 바이트).
   서브에이전트는 0 — 주입하지 않는다.
   `claude plugin details` 의 `Always-on: ~103 tok` 과 `Hooks (1) SessionStart (harness-only
   — no model context cost)` 는 이 플러그인에 대해 틀리다. 실제 주입량은 위 수치다
