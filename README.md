@@ -44,6 +44,25 @@ codex plugin marketplace add wotjr1649/adhd-mode --ref main
 codex plugin add adhd-mode@adhd-mode
 ```
 
+GitHub 설치는 **양쪽 호스트 모두 캐시본을 실행한다.** 로컬 경로 설치와 달리 Claude 도
+작업 트리를 읽지 않으므로, 새 커밋은 당겨야 들어온다.
+
+```bash
+claude plugin marketplace update adhd-mode
+claude plugin update adhd-mode@adhd-mode      # 재시작해야 적용된다
+
+codex plugin marketplace upgrade              # update 가 아니라 upgrade 다
+codex plugin add adhd-mode@adhd-mode
+```
+
+`claude plugin update` 는 **매니페스트의 `version` 으로 비교한다** — 버전이 그대로면
+`already at the latest version` 을 찍는다. 버전을 올리지 않은 재빌드를 강제로 받으려면
+`claude plugin uninstall` 후 다시 설치한다. 설치본이 실제로 어느 커밋인지는
+`<CLAUDE_CONFIG_DIR>/plugins/installed_plugins.json` 의 `gitCommitSha` 에 있다.
+
+Codex 는 훅 해시가 바뀐 경우에만 재승인을 요구한다. `hooks/hooks.json` 이 그대로면
+캐시만 갱신되고 승인 프롬프트는 뜨지 않는다.
+
 ### Codex는 훅 승인이 한 번 더 필요하다
 
 플러그인 설치와 훅 신뢰는 별개다. **승인 전까지 훅은 실행되지 않고, 그 사실은 어디에도
@@ -137,8 +156,9 @@ SessionStart(startup|resume|clear|compact|fork)
 - 훅은 파일 하나를 읽어 출력할 뿐이다. 어디에도 쓰지 않는다
 - 상태 파일, 홈 디렉터리 수정, 네트워크, MCP, telemetry 없음
 - 실패해도 세션 시작을 막지 않는다 (exit 0). 다만 이유는 stderr에 남긴다
-- 비용: 세션당 **1,933 토큰**(o200k 실측, 본문 8,254 바이트 기준. 현재 8,498 바이트).
-  서브에이전트는 0 — 주입하지 않는다.
+- 비용: 세션당 **1,933 토큰**(o200k 실측, 본문 8,254 바이트 기준). 현재 주입량은 체크아웃의
+  줄끝에 달렸다 — CRLF 8,498 바이트, LF 8,353 바이트. 내용은 같고 차이 145 바이트가 전부
+  줄끝이다. 서브에이전트는 0 — 주입하지 않는다.
   `claude plugin details` 의 `Always-on: ~103 tok` 과 `Hooks (1) SessionStart (harness-only
   — no model context cost)` 는 이 플러그인에 대해 틀리다. 실제 주입량은 위 수치다
 - `additionalContextLimit: 4000` 을 명시한다. Codex 기본값은 핸들러당 2,500 토큰이고
