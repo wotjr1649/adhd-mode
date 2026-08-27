@@ -1,6 +1,6 @@
 {
   "name": "adhd-mode",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Always-on output shaping for Codex: answer or next action first, real procedures numbered, no preamble or closers, and nothing dropped for the sake of brevity.",
   "author": {
     "name": "wotjr1649",
